@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EDGE Course Development Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#f8fafc;font-family:'Lato',sans-serif;color:#0f172a;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:#f1f5f9;}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}
+button{font-family:'Lato',sans-serif;cursor:pointer;}
+.syne{font-family:'Lato',sans-serif;}
+
+/* Layout */
+.page{min-height:100vh;background:#f8fafc;padding:28px 32px;}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.flex{display:flex;align-items:center;}
+.section-title{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px;}
+
+/* Stat cards */
+.stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.stat-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:12px 12px 0 0;}
+.stat-label{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px;}
+.stat-value{font-size:34px;font-weight:800;font-family:'Syne',sans-serif;line-height:1.1;color:#0f172a;}
+.stat-sub{font-size:12px;color:#475569;margin-top:4px;}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid #e2e8f0;margin-bottom:24px;overflow-x:auto;}
+.tab{background:none;border:none;padding:10px 14px;font-size:13px;font-weight:500;color:#475569;border-bottom:2px solid transparent;white-space:nowrap;margin-bottom:-1px;transition:all .15s;}
+.tab.active{color:#2563eb;border-bottom-color:#2563eb;}
+.tab:hover{color:#2563eb;}
+
+/* Upload */
+.upload-zone{width:480px;border:2px dashed #e2e8f0;border-radius:16px;padding:48px 32px;text-align:center;cursor:pointer;background:#fff;transition:all .2s;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.upload-zone.drag{border-color:#2563eb;background:#eff6ff;box-shadow:0 0 0 4px #bfdbfe;}
+.upload-btn{display:inline-block;background:#2563eb;color:#fff;font-size:13px;font-weight:600;padding:10px 24px;border-radius:8px;margin-top:8px;}
+
+/* Progress ring */
+.ring-wrap{position:relative;display:inline-flex;}
+.ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+/* Bar chart */
+.chart-wrap{width:100%;overflow:hidden;}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.bar-label{font-size:12px;color:#475569;width:110px;flex-shrink:0;text-align:right;}
+.bar-track{flex:1;height:20px;background:#f1f5f9;border-radius:4px;overflow:hidden;position:relative;}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:600;color:#fff;transition:width .4s;}
+.bar-count{font-size:12px;color:#475569;width:30px;flex-shrink:0;}
+
+/* Horizontal bar chart for partners */
+.hbar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.hbar-name{font-size:12px;color:#475569;width:80px;flex-shrink:0;text-align:right;}
+.hbar-track{flex:1;height:24px;background:#f1f5f9;border-radius:6px;overflow:hidden;}
+.hbar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:10px;font-size:11px;font-weight:600;color:#fff;}
+.hbar-val{width:30px;font-size:12px;color:#475569;flex-shrink:0;}
+
+/* Pie chart legend */
+.pie-legend{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+.pie-legend-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #e2e8f0;}
+.pie-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+
+/* Stacked bar FY */
+.fy-stack-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.fy-stack-label{font-size:13px;font-weight:600;color:#0f172a;width:40px;flex-shrink:0;}
+.fy-stack-bar{flex:1;height:28px;display:flex;border-radius:6px;overflow:hidden;}
+.fy-stack-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;}
+.fy-stack-total{font-size:12px;color:#475569;width:30px;flex-shrink:0;}
+
+/* Points meter */
+.pts-meter{flex:1;}
+.pts-track{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;}
+.pts-fill{height:100%;border-radius:4px;transition:width .4s;}
+.pts-labels{display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:#94a3b8;}
+
+/* Badge */
+.badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+.badge-green{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.badge-amber{background:#fffbeb;color:#d97706;border:1px solid #fde68a;}
+.badge-red{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.badge-blue{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;}
+
+/* Table */
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:8px 10px;font-size:11px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.07em;background:#f1f5f9;white-space:nowrap;}
+td{padding:9px 10px;font-size:12px;border-bottom:1px solid #e2e8f0;}
+tr:hover td{background:#f1f5f9;}
+
+/* Platform cards */
+.plat-card{flex:1 1 140px;background:#f1f5f9;border-radius:10px;padding:16px;}
+.plat-track{height:4px;background:#e2e8f0;border-radius:2px;margin-top:8px;}
+.plat-fill{height:4px;border-radius:2px;}
+
+/* LD row */
+.ld-row{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;margin-bottom:10px;}
+.ld-row-ok{background:#f1f5f9;border:1px solid #e2e8f0;}
+.ld-row-warn{background:#fffbeb;border:1px solid #fde68a;}
+.ld-row-over{background:#fef2f2;border:1px solid #fecaca;}
+
+/* Staff row */
+.staff-row{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;}
+
+/* FY cards */
+.fy-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px;}
+
+/* Partner detail */
+.partner-card{background:#f1f5f9;border-radius:8px;padding:14px 16px;}
+
+/* Info box */
+.info-box{padding:12px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;margin-top:16px;}
+
+@media(max-width:700px){
+  .grid5{grid-template-columns:1fr 1fr;}
+  .grid2{grid-template-columns:1fr;}
+  .grid4{grid-template-columns:1fr 1fr;}
+  .page{padding:16px;}
+  .upload-zone{width:100%;}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────────
+const PARTNER_COLORS=["#2563eb","#7c3aed","#db2777","#ea580c","#0891b2","#059669","#ca8a04","#9333ea"];
+const STATUS_COLORS={Completed:"#16a34a","In Development":"#2563eb","Not Started":"#94a3b8",Paused:"#d97706",Cancelled:"#dc2626",Other:"#7c3aed"};
+const PLATFORM_COLORS={Canvas:"#c2410c",Coursera:"#1d4ed8",Dual:"#6d28d9",TBD:"#94a3b8",SkillStack:"#047857"};
+const DEV_TYPE_POINTS={"First Time":5,"Reuse":5,"Redesign":4,"Migration":3,"Revision":2};
+const LD_MAX=35;
+const TABS=["Current FY (FY26)","All-Time Summary","By Fiscal Year","Partners & Platform","Resource Allocation","Active Courses"];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let STATE={screen:"upload",data:null,fileName:"",uploadedAt:"",activeTab:"Current FY (FY26)",selectedFY:"All",ldSort:"points",error:null};
+function setState(patch){Object.assign(STATE,patch);render();}
+
+// ── Data processing ───────────────────────────────────────────────────────────
+function processRows(rows){
+  const get=(row,...keys)=>{for(const k of keys){if(row[k]!==undefined&&row[k]!==null&&row[k]!=="")return String(row[k]).trim();}return "";};
+  const normalized=rows.map(r=>{const o={};Object.entries(r).forEach(([k,v])=>{o[k.trim()]=v;});return o;});
+  const sc={},fc={},pc={},plc={},dtc={},ctc={},tc={},ac=[],ld={},vp={},gd={};
+  normalized.forEach(row=>{
+    const status=get(row,"Course Status")||"Unknown";
+    const fy=get(row,"FY")||"Unassigned";
+    const partner=get(row,"Partner")||"Unknown";
+    const platform=get(row,"Platform")||"TBD";
+    const devType=get(row,"Dev Type")||"Unknown";
+    const courseType=get(row,"Course Type")||"Unknown";
+    const team=get(row,"Team");
+    const course=get(row,"Course");
+    const ldN=get(row,"Learning Designer");
+    const vpN=get(row,"Multimedia Video Producer");
+    const gdN=get(row,"Graphic Designer");
+    sc[status]=(sc[status]||0)+1;
+    if(fy!=="Unassigned"){fc[fy]=fc[fy]||{};fc[fy][status]=(fc[fy][status]||0)+1;}
+    pc[partner]=(pc[partner]||0)+1;
+    plc[platform]=(plc[platform]||0)+1;
+    dtc[devType]=(dtc[devType]||0)+1;
+    ctc[courseType]=(ctc[courseType]||0)+1;
+    if(team)team.split(",").forEach(p=>{const n=p.trim();if(n&&!["JackRabbit","Construct","Hurix","MPSi","TNS"].some(x=>n.includes(x)))tc[n]=(tc[n]||0)+1;});
+    if(status==="In Development")ac.push({Partner:partner,Course:course,FY:fy,Platform:platform,LD:ldN,VP:vpN,GD:gdN,DevType:devType,Pct:get(row,"%","% Complete","Percent Complete","Completion %")});
+    const addRole=(map,nameStr,extra)=>{if(!nameStr)return;nameStr.split(",").forEach(raw=>{const n=raw.trim();if(!n)return;map[n]=map[n]||{};map[n][fy]=map[n][fy]||{courses:0,...extra&&{points:0,devTypes:{}}};map[n][fy].courses++;if(extra){map[n][fy].points+=(DEV_TYPE_POINTS[devType]||0);map[n][fy].devTypes[devType]=(map[n][fy].devTypes[devType]||0)+1;}});};
+    addRole(ld,ldN,true);addRole(vp,vpN,false);addRole(gd,gdN,false);
+  });
+  return{total:normalized.length,completed:sc["Completed"]||0,in_development:sc["In Development"]||0,paused:sc["Paused"]||0,cancelled:sc["Cancelled"]||0,status_counts:sc,fy_status:fc,partner_counts:Object.fromEntries(Object.entries(pc).sort((a,b)=>b[1]-a[1]).slice(0,8)),platform_counts:plc,devtype_counts:dtc,coursetype_counts:ctc,team_top:Object.fromEntries(Object.entries(tc).sort((a,b)=>b[1]-a[1]).slice(0,12)),active_courses:ac,ld_data:ld,vp_data:vp,gd_data:gd};
+}
+
+// ── SVG Pie chart ─────────────────────────────────────────────────────────────
+function makePie(data,colors,cx,cy,r){
+  const total=data.reduce((s,d)=>s+d.v,0);if(!total)return'';
+  let angle=-Math.PI/2,segs='';
+  data.forEach((d,i)=>{
+    const sweep=2*Math.PI*d.v/total;
+    const x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    const x2=cx+r*Math.cos(angle+sweep),y2=cy+r*Math.sin(angle+sweep);
+    const large=sweep>Math.PI?1:0;
+    segs+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${colors[i%colors.length]}" opacity=".9"/>`;
+    angle+=sweep;
+  });
+  return segs;
+}
+
+function pieChart(data,colors,size=140){
+  const cx=size/2,cy=size/2,r=size/2-6;
+  return`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${makePie(data,colors,cx,cy,r)}</svg>`;
+}
+
+function progressRing(pct,size=128){
+  const r=54,circ=2*Math.PI*r,offset=circ*(1-pct/100);
+  return`<svg width="${size}" height="${size}" viewBox="0 0 128 128" style="transform:rotate(-90deg)"><circle cx="64" cy="64" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="10"/><circle cx="64" cy="64" r="${r}" fill="none" stroke="#16a34a" stroke-width="10" stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>`;
+}
+
+// ── HTML helpers ──────────────────────────────────────────────────────────────
+const h=String.raw;
+function statCard(label,value,sub,color){return`<div class="stat-card"><div class="stat-bar" style="background:${color}"></div><div class="stat-label">${label}</div><div class="stat-value syne">${value}</div>${sub?`<div class="stat-sub">${sub}</div>`:''}</div>`;}
+function sectionTitle(t){return`<div class="section-title">${t}</div>`;}
+
+function hBarChart(items,maxVal,color){
+  return items.map(({name,value})=>{
+    const pct=maxVal?Math.round(value/maxVal*100):0;
+    return`<div class="hbar-row"><div class="hbar-name">${name}</div><div class="hbar-track"><div class="hbar-fill" style="width:${pct}%;background:${color}">${value>2?value:''}</div></div><div class="hbar-val">${value}</div></div>`;
+  }).join('');
+}
+
+function vBarChart(items,maxVal,colorFn){
+  const barH=160,barW=36,gap=8;
+  const total=items.length;
+  const svgW=total*(barW+gap)+20;
+  let bars='',labels='',vals='';
+  items.forEach(({name,value},i)=>{
+    const h2=maxVal?Math.round(value/maxVal*barH):0;
+    const x=10+i*(barW+gap);
+    const y=barH-h2;
+    bars+=`<rect x="${x}" y="${y}" width="${barW}" height="${h2}" rx="3" fill="${colorFn(i)}" opacity=".9"/>`;
+    labels+=`<text x="${x+barW/2}" y="${barH+14}" text-anchor="middle" font-size="9" fill="#64748b">${name.length>8?name.slice(0,7)+'…':name}</text>`;
+    vals+=`<text x="${x+barW/2}" y="${y-4}" text-anchor="middle" font-size="9" font-weight="600" fill="#475569">${value}</text>`;
+  });
+  return`<div style="overflow-x:auto"><svg width="${svgW}" height="${barH+30}" viewBox="0 0 ${svgW} ${barH+30}">${bars}${labels}${vals}</svg></div>`;
+}
+
+// ── Upload screen ─────────────────────────────────────────────────────────────
+function renderUpload(){
+  return`<div style="min-height:100vh;background:#f8fafc;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;">
+    <div style="font-size:11px;letter-spacing:.2em;color:#2563eb;text-transform:uppercase;margin-bottom:12px;font-weight:700;">EDGE Unit · Course Development</div>
+    <h1 class="syne" style="font-size:36px;font-weight:800;color:#0f172a;margin-bottom:8px;letter-spacing:-.02em;">Program Dashboard</h1>
+    <p style="font-size:15px;color:#475569;margin-bottom:40px;text-align:center;max-width:420px;">Upload your latest Smartsheet export to refresh all metrics.</p>
+    <div class="upload-zone ${STATE.drag?'drag':''}" id="dropZone">
+      <div style="font-size:40px;margin-bottom:16px;">📂</div>
+      <div style="font-size:16px;font-weight:600;color:#0f172a;margin-bottom:6px;">${STATE.drag?'Drop to upload':'Drag & drop your file here'}</div>
+      <div style="font-size:13px;color:#94a3b8;margin-bottom:16px;">or click to browse</div>
+      <div class="upload-btn">Choose File</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:16px;">Supports .xlsx and .csv · Exported from Smartsheet</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none"/>
+    </div>
+    ${STATE.error?`<div style="margin-top:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 20px;color:#dc2626;font-size:13px;max-width:480px;text-align:center;">⚠️ ${STATE.error}</div>`:''}
+    <div class="card" style="margin-top:32px;max-width:480px;width:100%;">
+      <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">How to export from Smartsheet</div>
+      ${[["1","Open your sheet in Smartsheet"],["2","File → Export → Export to Excel (.xlsx)"],["3","Save the file to your computer"],["4","Drag it into the box above"]].map(([n,t])=>`<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;"><div style="width:22px;height:22px;border-radius:50%;background:#eff6ff;color:#2563eb;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${n}</div><div style="font-size:13px;color:#475569;padding-top:2px;">${t}</div></div>`).join('')}
+      <div class="info-box"><div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:4px;">REQUIRED COLUMNS FOR RESOURCE TAB</div><div style="font-size:12px;color:#166534;">Learning Designer · Multimedia Video Producer · Graphic Designer · Dev Type · FY</div></div>
+    </div>
+  </div>`;
+}
+
+// ── Tab: Current FY (FY26) ────────────────────────────────────────────────────
+function renderCurrentFY(d){
+  const CY="FY26";
+  const fyStatus=d.fy_status[CY]||{};
+  const fyTotal=Object.values(fyStatus).reduce((a,b)=>a+b,0);
+  const fyCompleted=fyStatus["Completed"]||0;
+  const fyInDev=fyStatus["In Development"]||0;
+  const fyPaused=fyStatus["Paused"]||0;
+  const fyNotStarted=fyStatus["Not Started"]||0;
+  const fyCr=fyTotal?Math.round(fyCompleted/fyTotal*100):0;
+
+  // Filter active courses to FY26
+  const fy26Active=d.active_courses.filter(c=>c.FY===CY);
+
+  // Partner breakdown for FY26 — recount from raw (approximated from fy_status structure)
+  // We build from active_courses + completed — use partner_counts filtered to FY26 if available
+  // Since we only have aggregated partner_counts, derive FY26 partner data from active_courses partner field
+  // and supplement with a note that completed FY26 courses drive the rest
+  const fy26PartnerMap={};
+  fy26Active.forEach(c=>{fy26PartnerMap[c.Partner]=(fy26PartnerMap[c.Partner]||0)+1;});
+  const fy26PartnerItems=Object.entries(fy26PartnerMap).sort((a,b)=>b[1]-a[1]);
+  const maxFYPartner=fy26PartnerItems[0]?.[1]||1;
+
+  // Dev type for FY26 active courses
+  const fy26DevMap={};
+  fy26Active.forEach(c=>{fy26DevMap[c.DevType]=(fy26DevMap[c.DevType]||0)+1;});
+  const fy26DevItems=Object.entries(fy26DevMap).sort((a,b)=>b[1]-a[1]);
+  const maxFYDev=fy26DevItems[0]?.[1]||1;
+
+  // Platform for FY26 active
+  const fy26PlatMap={};
+  fy26Active.forEach(c=>{fy26PlatMap[c.Platform]=(fy26PlatMap[c.Platform]||0)+1;});
+  const fy26PlatItems=Object.entries(fy26PlatMap).map(([name,value])=>({name,value}));
+
+  // LD points for FY26
+  const fy26LDItems=Object.entries(d.ld_data).map(([name,fyMap])=>{
+    const x=fyMap[CY]||{points:0,courses:0,devTypes:{}};
+    return{name,points:x.points,courses:x.courses,devTypes:x.devTypes};
+  }).filter(r=>r.courses>0).sort((a,b)=>b.points-a.points);
+
+  // Dev type color palette — consistent across bars and legend
+  const DT_COLORS={"First Time":"#2563eb","Reuse":"#7c3aed","Redesign":"#0891b2","Migration":"#059669","Revision":"#d97706","Refresh":"#ec4899","Unknown":"#94a3b8"};
+
+  function badge(pts){const rem=LD_MAX-pts;if(pts>LD_MAX)return`<span class="badge badge-red">OVER by ${pts-LD_MAX} pts</span>`;if(pts>=LD_MAX*.8)return`<span class="badge badge-amber">${rem} pts left</span>`;return`<span class="badge badge-green">${rem} pts available</span>`;}
+
+  function stackedMeter(pts,devTypes){
+    const over=pts>LD_MAX,warn=pts>=LD_MAX*.8&&!over;
+    const trackColor=over?"#fef2f2":warn?"#fffbeb":"#f1f5f9";
+    const usedPct=Math.min(pts/LD_MAX*100,100);
+    // Build segments proportional to their point contribution
+    const segments=Object.entries(devTypes).map(([type,count])=>{
+      const typePts=(DEV_TYPE_POINTS[type]||0)*count;
+      const segPct=pts>0?(typePts/pts)*usedPct:0;
+      return{type,typePts,segPct,color:DT_COLORS[type]||"#94a3b8"};
+    }).filter(s=>s.typePts>0);
+    const segsHtml=segments.map(s=>`<div style="height:100%;width:${s.segPct}%;background:${s.color};flex-shrink:0;" title="${s.type}: ${s.typePts} pts"></div>`).join('');
+    // Overflow indicator
+    const overHtml=over?`<div style="position:absolute;right:0;top:0;bottom:0;width:3px;background:#dc2626;border-radius:0 4px 4px 0;"></div>`:'';
+    return`<div class="pts-meter">
+      <div style="height:12px;background:${trackColor};border-radius:4px;overflow:hidden;position:relative;border:1px solid ${over?'#fecaca':warn?'#fde68a':'#e2e8f0'};">
+        <div style="display:flex;height:100%;width:100%;">${segsHtml}</div>
+        ${overHtml}
+      </div>
+      <div class="pts-labels"><span>${pts} pts used</span><span>${LD_MAX} max</span></div>
+    </div>`;
+  }
+
+  function fmtPct(raw){if(!raw||raw==="")return null;const n=parseFloat(String(raw).replace('%',''));if(isNaN(n))return null;return n<=1&&n>=0?Math.round(n*100):Math.round(n);}
+
+  const hasPartnerData=fy26PartnerItems.length>0;
+  const hasLDData=fy26LDItems.length>0;
+
+  return`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 16px;font-size:13px;font-weight:700;color:#1d4ed8;">FY26 — Current Fiscal Year</div>
+      <div style="font-size:13px;color:#94a3b8;">${fyTotal} total courses tracked this year</div>
+    </div>
+
+    <!-- Status KPIs -->
+    <div class="grid5" style="margin-bottom:20px;">
+      ${statCard("FY26 Total",fyTotal,"Courses this fiscal year","#2563eb")}
+      ${statCard("Completed",fyCompleted,`${fyCr}% of FY26 done`,"#16a34a")}
+      ${statCard("In Development",fyInDev,"Active right now","#2563eb")}
+      ${statCard("Not Started",fyNotStarted,"Pipeline not yet begun","#94a3b8")}
+      ${statCard("Paused",fyPaused,"Needs attention","#d97706")}
+    </div>
+
+    <div class="grid2" style="margin-bottom:20px;">
+      <!-- Completion ring + status legend -->
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        ${sectionTitle("FY26 Completion")}
+        <div class="ring-wrap">
+          ${progressRing(fyCr)}
+          <div class="ring-label">
+            <span style="font-size:26px;font-weight:900;color:#16a34a;">${fyCr}%</span>
+            <span style="font-size:11px;color:#94a3b8;">done</span>
+          </div>
+        </div>
+        <div class="pie-legend" style="width:100%;margin-top:16px;">
+          ${Object.entries(fyStatus).map(([name,value])=>`<div class="pie-legend-row"><div class="flex" style="gap:8px;"><div class="pie-dot" style="background:${STATUS_COLORS[name]||'#94a3b8'}"></div><span style="font-size:12px;color:#475569;">${name}</span></div><span style="font-size:12px;font-weight:700;">${value}</span></div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Platform breakdown for FY26 active -->
+      <div class="card">
+        ${sectionTitle("Platform — FY26 In Development")}
+        ${fy26PlatItems.length===0?`<div style="color:#94a3b8;font-size:13px;padding:24px 0;text-align:center;">No platform data yet for FY26 active courses</div>`:`
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+            ${fy26PlatItems.map(({name,value})=>{const pct=fy26Active.length?Math.round(value/fy26Active.length*100):0;const c=PLATFORM_COLORS[name]||"#94a3b8";return`<div class="plat-card" style="border-left:3px solid ${c};flex:1 1 120px;"><div style="font-size:22px;font-weight:800;">${value}</div><div style="font-size:13px;color:#475569;margin-top:2px;">${name}</div><div style="font-size:11px;color:#94a3b8;margin-top:4px;">${pct}% of active</div><div class="plat-track"><div class="plat-fill" style="width:${pct}%;background:${c}"></div></div></div>`;}).join('')}
+          </div>
+          ${sectionTitle("Dev Type — FY26 In Development")}
+          ${fy26DevItems.map(([name,value])=>`<div class="hbar-row" style="margin-bottom:8px;"><div class="hbar-name" style="width:90px;">${name}</div><div class="hbar-track" style="height:20px;"><div class="hbar-fill" style="width:${Math.round(value/maxFYDev*100)}%;background:#6366f1;">${value}</div></div><div class="hbar-val">${value}</div></div>`).join('')}
+        `}
+      </div>
+    </div>
+
+    <!-- Partner breakdown -->
+    ${hasPartnerData?`<div class="card" style="margin-bottom:20px;">
+      ${sectionTitle("Partner Breakdown — FY26 In Development")}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>${fy26PartnerItems.map(([name,value],i)=>`<div class="hbar-row"><div class="hbar-name">${name}</div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.round(value/maxFYPartner*100)}%;background:${PARTNER_COLORS[i%8]};">${value}</div></div><div class="hbar-val">${value}</div></div>`).join('')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start;">
+          ${fy26PartnerItems.map(([name,value],i)=>`<div class="partner-card" style="border-top:2px solid ${PARTNER_COLORS[i%8]};"><div style="font-size:18px;font-weight:800;">${value}</div><div style="font-size:12px;color:#475569;">${name}</div><div style="font-size:11px;color:#94a3b8;">${fy26Active.length?Math.round(value/fy26Active.length*100):0}% of active</div></div>`).join('')}
+        </div>
+      </div>
+    </div>`:''}
+
+    <!-- LD Points for FY26 -->
+    ${hasLDData?`<div class="card" style="margin-bottom:20px;">
+      ${sectionTitle("Learning Designer Point Load — FY26")}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+        ${Object.entries(DEV_TYPE_POINTS).map(([t,p])=>`<div style="background:#f1f5f9;border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:8px;border:1px solid #e2e8f0;"><div style="width:10px;height:10px;border-radius:2px;background:${DT_COLORS[t]||'#94a3b8'};flex-shrink:0;"></div><span style="font-size:12px;color:#475569;">${t}</span><span style="font-size:16px;font-weight:800;color:${DT_COLORS[t]||'#475569'};">${p}</span><span style="font-size:10px;color:#94a3b8;">pts</span></div>`).join('')}
+        <div style="background:#eff6ff;border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:8px;border:1px solid #bfdbfe;margin-left:auto;"><span style="font-size:12px;color:#1d4ed8;font-weight:600;">Max per LD</span><span style="font-size:16px;font-weight:800;color:#1d4ed8;">${LD_MAX}</span><span style="font-size:10px;color:#3b82f6;">pts</span></div>
+      </div>
+      ${fy26LDItems.map((ld,i)=>{
+        const over=ld.points>LD_MAX,warn=ld.points>=LD_MAX*.8&&!over;
+        const rc=over?"ld-row-over":warn?"ld-row-warn":"ld-row-ok";
+        const ptColor=over?"#dc2626":warn?"#d97706":"#0f172a";
+        return`<div class="ld-row ${rc}">
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;width:20px;text-align:center;flex-shrink:0;">#${i+1}</div>
+          <div style="width:170px;flex-shrink:0;">
+            <div style="font-size:13px;font-weight:700;">${ld.name}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${ld.courses} course${ld.courses!==1?"s":""} · ${Object.entries(ld.devTypes).map(([t,c])=>`${c}× ${t}`).join(", ")}</div>
+          </div>
+          ${stackedMeter(ld.points,ld.devTypes)}
+          <div style="text-align:right;flex-shrink:0;min-width:50px;"><div style="font-size:20px;font-weight:900;color:${ptColor};">${ld.points}</div><div style="font-size:10px;color:#94a3b8;">pts</div></div>
+          ${badge(ld.points)}
+        </div>`;
+      }).join('')}
+    </div>`:''}
+
+    <!-- FY26 Active Courses table -->
+    <div class="card">
+      ${sectionTitle(`Active Courses In Development — FY26 (${fy26Active.length})`)}
+      ${fy26Active.length===0?`<div style="text-align:center;padding:24px 0;color:#94a3b8;font-size:13px;">No courses currently In Development for FY26</div>`:`
+      <div style="overflow-x:auto;">
+        <table style="min-width:800px;">
+          <thead><tr>${["Partner","Course","% Complete","Learning Designer","Video Producer","Graphic Designer","Platform"].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${fy26Active.map(c=>{
+              function fmtPct(raw){if(!raw||raw==="")return null;const n=parseFloat(String(raw).replace('%',''));if(isNaN(n))return null;return n<=1&&n>=0?Math.round(n*100):Math.round(n);}
+              const pct=fmtPct(c.Pct);
+              const pctCell=pct!==null?`<div style="display:flex;align-items:center;gap:8px;min-width:90px;"><div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;"><div style="height:6px;width:${pct}%;background:${pct>=80?'#16a34a':pct>=40?'#2563eb':'#d97706'};border-radius:3px;"></div></div><span style="font-size:11px;font-weight:700;color:${pct>=80?'#16a34a':pct>=40?'#2563eb':'#d97706'};min-width:28px;">${pct}%</span></div>`:`<span style="color:#94a3b8;">—</span>`;
+              return`<tr>
+                <td><span style="font-size:11px;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:4px;font-weight:600;border:1px solid #e2e8f0;">${c.Partner}</span></td>
+                <td>${c.Course}</td>
+                <td>${pctCell}</td>
+                <td style="color:#2563eb;">${c.LD||'<span style="color:#94a3b8;">—</span>'}</td>
+                <td style="color:#7c3aed;">${c.VP||'<span style="color:#94a3b8;">—</span>'}</td>
+                <td style="color:#db2777;">${c.GD||'<span style="color:#94a3b8;">—</span>'}</td>
+                <td><span style="font-size:11px;color:${PLATFORM_COLORS[c.Platform]||'#475569'};background:#f8fafc;border:1px solid ${PLATFORM_COLORS[c.Platform]||'#e2e8f0'};padding:2px 7px;border-radius:4px;font-weight:600;">${c.Platform}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>`;
+}
+
+// ── Tab: All-Time Summary (formerly Overview) ─────────────────────────────────
+function renderOverview(d){
+  const cr=Math.round(d.completed/d.total*100);
+  const statusItems=Object.entries(d.status_counts).map(([name,value])=>({name,value}));
+  const ctItems=Object.entries(d.coursetype_counts).map(([name,value])=>({name,value}));
+  const dtItems=Object.entries(d.devtype_counts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,value])=>({name,value}));
+  const maxDT=Math.max(...dtItems.map(x=>x.value));
+  const platItems=Object.entries(d.platform_counts).map(([name,value])=>({name,value}));
+  return`
+    <div class="grid5">
+      ${statCard("Total Courses",d.total,"All partners & FYs","#2563eb")}
+      ${statCard("Completed",d.completed,`${cr}% completion rate`,"#16a34a")}
+      ${statCard("In Development",d.in_development,"Active workload","#2563eb")}
+      ${statCard("Paused",d.paused,"Needs attention","#d97706")}
+      ${statCard("Cancelled",d.cancelled,"Removed from pipeline","#dc2626")}
+    </div>
+    <div class="grid2">
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;">
+        ${sectionTitle("Completion Rate")}
+        <div class="ring-wrap">
+          ${progressRing(cr)}
+          <div class="ring-label">
+            <span class="syne" style="font-size:26px;font-weight:800;color:#16a34a;">${cr}%</span>
+            <span style="font-size:11px;color:#94a3b8;">done</span>
+          </div>
+        </div>
+        <div class="pie-legend" style="width:100%;margin-top:16px;">
+          ${statusItems.map(({name,value})=>`<div class="pie-legend-row"><div class="flex" style="gap:8px;"><div class="pie-dot" style="background:${STATUS_COLORS[name]||'#94a3b8'}"></div><span style="font-size:12px;color:#475569;">${name}</span></div><span style="font-size:12px;font-weight:600;">${value}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="card">
+        ${sectionTitle("Course Type & Dev Method")}
+        <div class="grid2" style="margin-bottom:0;gap:16px;height:220px;">
+          <div>
+            <div style="font-size:12px;color:#94a3b8;text-align:center;margin-bottom:8px;">By Credit Type</div>
+            <div style="display:flex;justify-content:center;">${pieChart(ctItems.map((x,i)=>({v:x.value})),["#2563eb","#7c3aed","#94a3b8"])}</div>
+            <div style="margin-top:6px;">${ctItems.map((x,i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#475569;margin-bottom:3px;"><div style="width:8px;height:8px;border-radius:2px;background:${["#2563eb","#7c3aed","#94a3b8"][i]};flex-shrink:0;"></div>${x.name}</div>`).join('')}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#94a3b8;text-align:center;margin-bottom:8px;">By Dev Type</div>
+            ${dtItems.map(({name,value})=>`<div class="bar-row" style="margin-bottom:6px;"><div class="bar-label" style="width:70px;font-size:11px;">${name}</div><div class="bar-track" style="height:16px;"><div class="bar-fill" style="width:${maxDT?Math.round(value/maxDT*100):0}%;background:#6366f1;font-size:10px;">${value>3?value:''}</div></div><div class="bar-count">${value}</div></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      ${sectionTitle("Platform Distribution")}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        ${platItems.map(({name,value})=>{const pct=Math.round(value/d.total*100);const c=PLATFORM_COLORS[name]||"#94a3b8";return`<div class="plat-card" style="border-left:3px solid ${c}"><div class="syne" style="font-size:22px;font-weight:700;">${value}</div><div style="font-size:13px;color:#475569;margin-top:2px;">${name}</div><div style="font-size:11px;color:#94a3b8;margin-top:4px;">${pct}% of portfolio</div><div class="plat-track"><div class="plat-fill" style="width:${pct}%;background:${c}"></div></div></div>`;}).join('')}
+      </div>
+    </div>`;
+}
+
+// ── Tab: By Fiscal Year ───────────────────────────────────────────────────────
+function renderFY(d){
+  const fyEntries=Object.entries(d.fy_status).sort();
+  const maxTotal=Math.max(...fyEntries.map(([,s])=>Object.values(s).reduce((a,b)=>a+b,0)));
+  const allStatuses=Object.keys(STATUS_COLORS);
+  return`
+    <div class="fy-card-grid">
+      ${fyEntries.map(([fy,statuses])=>{
+        const total=Object.values(statuses).reduce((a,b)=>a+b,0);
+        const done=statuses["Completed"]||0;
+        const pct=total?Math.round(done/total*100):0;
+        return`<div class="card"><div class="syne" style="font-size:22px;font-weight:800;">${fy}</div><div style="font-size:13px;color:#94a3b8;margin-bottom:14px;">${total} courses</div>${Object.entries(statuses).filter(([,v])=>v>0).map(([s,c])=>`<div style="display:flex;justify-content:space-between;margin-bottom:6px;"><div class="flex" style="gap:6px;"><div style="width:8px;height:8px;border-radius:2px;background:${STATUS_COLORS[s]||'#94a3b8'};flex-shrink:0;"></div><span style="font-size:12px;color:#475569;">${s}</span></div><span style="font-size:12px;font-weight:600;">${c}</span></div>`).join('')}<div style="margin-top:12px;height:4px;background:#e2e8f0;border-radius:2px;"><div style="height:4px;width:${pct}%;background:#16a34a;border-radius:2px;"></div></div><div style="font-size:11px;color:#94a3b8;margin-top:4px;">${pct}% complete</div></div>`;
+      }).join('')}
+    </div>
+    <div class="card">
+      ${sectionTitle("Status by Fiscal Year (Stacked)")}
+      ${fyEntries.map(([fy,statuses])=>{
+        const total=Object.values(statuses).reduce((a,b)=>a+b,0);
+        const pct=maxTotal?Math.round(total/maxTotal*100):0;
+        return`<div class="fy-stack-row"><div class="fy-stack-label">${fy}</div><div class="fy-stack-bar" style="width:${pct}%;min-width:4px;">${allStatuses.filter(s=>statuses[s]>0).map(s=>`<div class="fy-stack-seg" style="width:${Math.round((statuses[s]||0)/total*100)}%;background:${STATUS_COLORS[s]};min-width:2px;">${statuses[s]>1?statuses[s]:''}</div>`).join('')}</div><div class="fy-stack-total">${total}</div></div>`;
+      }).join('')}
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+        ${Object.entries(STATUS_COLORS).map(([s,c])=>`<div class="flex" style="gap:6px;font-size:11px;color:#475569;"><div style="width:10px;height:10px;border-radius:2px;background:${c};"></div>${s}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── Tab: Partners & Platform ──────────────────────────────────────────────────
+function renderPartners(d){
+  const pd=Object.entries(d.partner_counts).map(([name,value])=>({name,value}));
+  const maxP=pd[0]?.value||1;
+  const platD=Object.entries(d.platform_counts).map(([name,value])=>({name,value}));
+  return`
+    <div class="grid2">
+      <div class="card">
+        ${sectionTitle("Courses by Partner")}
+        ${pd.map(({name,value},i)=>`<div class="hbar-row"><div class="hbar-name">${name}</div><div class="hbar-track"><div class="hbar-fill" style="width:${Math.round(value/maxP*100)}%;background:${PARTNER_COLORS[i%8]}">${value}</div></div><div class="hbar-val"></div></div>`).join('')}
+      </div>
+      <div class="card">
+        ${sectionTitle("Platform Split")}
+        <div style="display:flex;justify-content:center;margin-bottom:16px;">${pieChart(platD.map(x=>({v:x.value})),Object.values(PLATFORM_COLORS),160)}</div>
+        <div class="pie-legend">
+          ${platD.map(({name,value})=>`<div class="pie-legend-row"><div class="flex" style="gap:8px;"><div class="pie-dot" style="background:${PLATFORM_COLORS[name]||'#94a3b8'}"></div><span style="font-size:12px;color:#475569;">${name}</span></div><span style="font-size:12px;font-weight:600;">${value}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      ${sectionTitle("Partner Portfolio Detail")}
+      <div class="grid4">
+        ${pd.map(({name,value},i)=>`<div class="partner-card" style="border-top:2px solid ${PARTNER_COLORS[i%8]}"><div class="syne" style="font-size:18px;font-weight:700;">${value}</div><div style="font-size:13px;color:#475569;">${name}</div><div style="font-size:11px;color:#94a3b8;margin-top:2px;">${Math.round(value/d.total*100)}% of portfolio</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── Tab: Resource Allocation ──────────────────────────────────────────────────
+function renderResource(d){
+  const selectedFY=STATE.selectedFY;
+  const allFYs=Array.from(new Set([...Object.values(d.ld_data).flatMap(x=>Object.keys(x)),...Object.values(d.vp_data).flatMap(x=>Object.keys(x)),...Object.values(d.gd_data).flatMap(x=>Object.keys(x))].filter(f=>f!=="Unassigned"))).sort();
+  const hasData=Object.keys(d.ld_data).length>0||Object.keys(d.vp_data).length>0||Object.keys(d.gd_data).length>0;
+  if(!hasData)return`<div class="card"><div style="text-align:center;padding:48px 0;"><div style="font-size:32px;margin-bottom:16px;">👥</div><div style="font-size:16px;font-weight:600;margin-bottom:8px;">No role data found yet</div><div style="font-size:13px;color:#475569;max-width:420px;margin:0 auto;">This tab populates once your Smartsheet has <strong>Learning Designer</strong>, <strong>Multimedia Video Producer</strong>, and <strong>Graphic Designer</strong> columns filled in.</div></div></div>`;
+
+  const agg=(map,fy)=>Object.entries(map).map(([name,fyMap])=>{
+    if(fy==="All"){const courses=Object.values(fyMap).reduce((s,x)=>s+x.courses,0);const points=Object.values(fyMap).reduce((s,x)=>s+(x.points||0),0);const devTypes={};Object.values(fyMap).forEach(x=>x.devTypes&&Object.entries(x.devTypes).forEach(([t,c])=>{devTypes[t]=(devTypes[t]||0)+c;}));return{name,courses,points,devTypes};}
+    const x=fyMap[fy]||{courses:0,points:0,devTypes:{}};return{name,courses:x.courses,points:x.points||0,devTypes:x.devTypes||{}};
+  }).filter(r=>r.courses>0);
+
+  const ldRows=agg(d.ld_data,selectedFY).sort((a,b)=>STATE.ldSort==="points"?b.points-a.points:b.courses-a.courses);
+  const vpRows=agg(d.vp_data,selectedFY).sort((a,b)=>b.courses-a.courses);
+  const gdRows=agg(d.gd_data,selectedFY).sort((a,b)=>b.courses-a.courses);
+  const maxVP=vpRows.reduce((m,r)=>Math.max(m,r.courses),0)||1;
+  const maxGD=gdRows.reduce((m,r)=>Math.max(m,r.courses),0)||1;
+  const over=selectedFY!=="All"?ldRows.filter(r=>r.points>LD_MAX).length:0;
+  const atRisk=selectedFY!=="All"?ldRows.filter(r=>r.points>=LD_MAX*.8&&r.points<=LD_MAX).length:0;
+
+  function badge(pts){const rem=LD_MAX-pts;if(pts>LD_MAX)return`<span class="badge badge-red">OVER by ${pts-LD_MAX} pts</span>`;if(pts>=LD_MAX*.8)return`<span class="badge badge-amber">${rem} pts left</span>`;return`<span class="badge badge-green">${rem} pts available</span>`;}
+  const DT_COLORS_R={"First Time":"#2563eb","Reuse":"#7c3aed","Redesign":"#0891b2","Migration":"#059669","Revision":"#d97706","Refresh":"#ec4899","Unknown":"#94a3b8"};
+  function stackedMeterR(pts,devTypes){
+    const over=pts>LD_MAX,warn=pts>=LD_MAX*.8&&!over;
+    const trackColor=over?"#fef2f2":warn?"#fffbeb":"#f1f5f9";
+    const usedPct=Math.min(pts/LD_MAX*100,100);
+    const segments=Object.entries(devTypes).map(([type,count])=>{const typePts=(DEV_TYPE_POINTS[type]||0)*count;const segPct=pts>0?(typePts/pts)*usedPct:0;return{type,typePts,segPct,color:DT_COLORS_R[type]||"#94a3b8"};}).filter(s=>s.typePts>0);
+    const segsHtml=segments.map(s=>`<div style="height:100%;width:${s.segPct}%;background:${s.color};flex-shrink:0;" title="${s.type}: ${s.typePts} pts"></div>`).join('');
+    const overHtml=over?`<div style="position:absolute;right:0;top:0;bottom:0;width:3px;background:#dc2626;border-radius:0 4px 4px 0;"></div>`:'';
+    return`<div class="pts-meter"><div style="height:12px;background:${trackColor};border-radius:4px;overflow:hidden;position:relative;border:1px solid ${over?'#fecaca':warn?'#fde68a':'#e2e8f0'};"><div style="display:flex;height:100%;width:100%;">${segsHtml}</div>${overHtml}</div><div class="pts-labels"><span>${pts} pts used</span><span>${LD_MAX} max</span></div></div>`;
+  }
+
+  return`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+      <span style="font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Fiscal Year:</span>
+      ${["All",...allFYs].map(fy=>`<button onclick="setState({selectedFY:'${fy}'})" style="font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;background:${STATE.selectedFY===fy?"#2563eb":"#f1f5f9"};color:${STATE.selectedFY===fy?"#fff":"#475569"};border:1px solid ${STATE.selectedFY===fy?"#2563eb":"#e2e8f0"};">${fy}</button>`).join('')}
+    </div>
+    <div class="grid5">
+      ${statCard("Learning Designers",Object.keys(d.ld_data).length,"Active staff","#2563eb")}
+      ${statCard("Video Producers",Object.keys(d.vp_data).length,"Active staff","#7c3aed")}
+      ${statCard("Graphic Designers",Object.keys(d.gd_data).length,"Active staff","#db2777")}
+      ${selectedFY!=="All"?statCard("Over Capacity",over,`LDs exceeding ${LD_MAX} pts`,"#dc2626")+statCard("At Risk",atRisk,"≥80% of max points","#d97706"):statCard("Total LD Points",ldRows.reduce((s,r)=>s+r.points,0),"All FYs combined","#0891b2")+statCard("Max per LD / FY",LD_MAX,"Points cap","#94a3b8")}
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      ${sectionTitle("Points System Reference")}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        ${Object.entries(DEV_TYPE_POINTS).map(([t,p])=>`<div style="background:#f1f5f9;border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;"><div style="width:10px;height:10px;border-radius:2px;background:${DT_COLORS_R[t]||'#94a3b8'};flex-shrink:0;"></div><span style="font-size:13px;color:#475569;">${t}</span><span class="syne" style="font-size:18px;font-weight:800;color:${DT_COLORS_R[t]||'#2563eb'};">${p}</span><span style="font-size:11px;color:#94a3b8;">pts</span></div>`).join('')}
+        <div style="background:#eff6ff;border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;border:1px solid #bfdbfe;margin-left:auto;"><span style="font-size:13px;color:#1d4ed8;font-weight:600;">Max per LD / FY</span><span class="syne" style="font-size:18px;font-weight:800;color:#1d4ed8;">${LD_MAX}</span><span style="font-size:11px;color:#3b82f6;">pts</span></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        ${sectionTitle(`Learning Designer Capacity — ${selectedFY}`)}
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:11px;color:#94a3b8;">Sort by:</span>
+          ${["points","courses"].map(f=>`<button onclick="setState({ldSort:'${f}'})" style="font-size:11px;padding:3px 10px;border-radius:6px;font-weight:600;background:${STATE.ldSort===f?"#2563eb":"#f1f5f9"};color:${STATE.ldSort===f?"#fff":"#475569"};border:1px solid ${STATE.ldSort===f?"#2563eb":"#e2e8f0"};">${f==="points"?"Points":"Courses"}</button>`).join('')}
+        </div>
+      </div>
+      ${ldRows.length===0?`<div style="text-align:center;padding:24px 0;color:#94a3b8;font-size:13px;">No Learning Designer data for ${selectedFY}</div>`:ldRows.map((ld,i)=>{
+        const over2=selectedFY!=="All"&&ld.points>LD_MAX;
+        const warn2=selectedFY!=="All"&&ld.points>=LD_MAX*.8&&!over2;
+        const rc=over2?"ld-row-over":warn2?"ld-row-warn":"ld-row-ok";
+        const ptColor=over2?"#dc2626":warn2?"#d97706":"#0f172a";
+        return`<div class="ld-row ${rc}">
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;width:20px;text-align:center;flex-shrink:0;">#${i+1}</div>
+          <div style="width:170px;flex-shrink:0;">
+            <div style="font-size:13px;font-weight:600;">${ld.name}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${ld.courses} course${ld.courses!==1?"s":""} · ${Object.entries(ld.devTypes).map(([t,c])=>`${c}× ${t}`).join(", ")}</div>
+          </div>
+          ${selectedFY!=="All"?stackedMeterR(ld.points,ld.devTypes):`<div style="flex:1;font-size:13px;color:#475569;">${ld.points} total pts across all FYs</div>`}
+          <div style="text-align:right;flex-shrink:0;min-width:50px;">
+            <div class="syne" style="font-size:20px;font-weight:800;color:${ptColor};">${ld.points}</div>
+            <div style="font-size:10px;color:#94a3b8;">pts</div>
+          </div>
+          ${selectedFY!=="All"?badge(ld.points):""}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="grid2">
+      ${[{label:"Multimedia Video Producers",rows:vpRows,max:maxVP,color:"#7c3aed"},{label:"Graphic Designers",rows:gdRows,max:maxGD,color:"#db2777"}].map(({label,rows,max,color})=>`
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><div style="width:10px;height:10px;border-radius:2px;background:${color};"></div>${sectionTitle(`${label}${selectedFY!=="All"?` — ${selectedFY}`:""}`)}</div>
+          ${rows.length===0?`<div style="text-align:center;padding:24px 0;color:#94a3b8;font-size:13px;">No data for ${selectedFY}</div>`:rows.map((r,i)=>`<div class="staff-row"><div style="font-size:12px;font-weight:700;color:#94a3b8;width:20px;text-align:center;">#${i+1}</div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${r.name}</div><div style="margin-top:5px;height:4px;background:#e2e8f0;border-radius:2px;"><div style="height:4px;width:${Math.round(r.courses/max*100)}%;background:${color};border-radius:2px;"></div></div></div><div class="syne" style="font-size:16px;font-weight:800;flex-shrink:0;">${r.courses}</div><div style="font-size:10px;color:#94a3b8;flex-shrink:0;">courses</div></div>`).join('')}
+        </div>`).join('')}
+    </div>`;
+}
+
+
+
+// ── Tab: Active Courses ───────────────────────────────────────────────────────
+function renderActive(d){
+  function fmtPct(raw){
+    if(!raw||raw==="")return null;
+    const n=parseFloat(String(raw).replace('%',''));
+    if(isNaN(n))return null;
+    // if stored as decimal (0–1) convert to percentage
+    return n<=1&&n>=0?Math.round(n*100):Math.round(n);
+  }
+  return`<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      ${sectionTitle(`Courses In Development (${d.in_development})`)}
+      <span class="badge badge-blue">Active Pipeline</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="min-width:800px;">
+        <thead><tr>${["Partner","Course","% Complete","Learning Designer","Video Producer","Graphic Designer","FY","Platform"].map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${d.active_courses.map(c=>{
+            const pct=fmtPct(c.Pct);
+            const pctCell=pct!==null
+              ? `<div style="display:flex;align-items:center;gap:8px;min-width:90px;">
+                   <div style="flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                     <div style="height:6px;width:${pct}%;background:${pct>=80?'#16a34a':pct>=40?'#2563eb':'#d97706'};border-radius:3px;"></div>
+                   </div>
+                   <span style="font-size:11px;font-weight:700;color:${pct>=80?'#16a34a':pct>=40?'#2563eb':'#d97706'};min-width:28px;">${pct}%</span>
+                 </div>`
+              : `<span style="color:#94a3b8;font-size:12px;">—</span>`;
+            return`<tr>
+              <td><span style="font-size:11px;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:4px;font-weight:600;border:1px solid #e2e8f0;">${c.Partner}</span></td>
+              <td>${c.Course}</td>
+              <td>${pctCell}</td>
+              <td style="color:#2563eb;">${c.LD||'<span style="color:#94a3b8;">—</span>'}</td>
+              <td style="color:#7c3aed;">${c.VP||'<span style="color:#94a3b8;">—</span>'}</td>
+              <td style="color:#db2777;">${c.GD||'<span style="color:#94a3b8;">—</span>'}</td>
+              <td style="color:#2563eb;font-weight:600;">${c.FY}</td>
+              <td><span style="font-size:11px;color:${PLATFORM_COLORS[c.Platform]||'#475569'};background:#f8fafc;border:1px solid ${PLATFORM_COLORS[c.Platform]||'#e2e8f0'};padding:2px 7px;border-radius:4px;font-weight:600;">${c.Platform}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+// ── Dashboard shell ───────────────────────────────────────────────────────────
+function renderDashboard(d){
+  let tabContent='';
+  if(STATE.activeTab==="Current FY (FY26)")tabContent=renderCurrentFY(d);
+  else if(STATE.activeTab==="All-Time Summary")tabContent=renderOverview(d);
+  else if(STATE.activeTab==="By Fiscal Year")tabContent=renderFY(d);
+  else if(STATE.activeTab==="Partners & Platform")tabContent=renderPartners(d);
+  else if(STATE.activeTab==="Resource Allocation")tabContent=renderResource(d);
+  else if(STATE.activeTab==="Active Courses")tabContent=renderActive(d);
+  return`<div class="page">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-size:11px;letter-spacing:.2em;color:#2563eb;text-transform:uppercase;margin-bottom:6px;font-weight:700;">EDGE Unit · Course Development</div>
+        <h1 class="syne" style="font-size:32px;font-weight:800;letter-spacing:-.02em;">Program Dashboard</h1>
+        <p style="font-size:14px;color:#475569;margin-top:4px;">Portfolio health · Resourcing · Progress tracking</p>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;color:#94a3b8;">Data source</div>
+        <div style="font-size:13px;color:#475569;font-weight:500;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${STATE.fileName}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Uploaded ${STATE.uploadedAt}</div>
+        <button onclick="setState({screen:'upload',data:null})" style="margin-top:10px;font-size:12px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:5px 12px;font-weight:600;">↑ Upload new file</button>
+      </div>
+    </div>
+    <div class="tabs">
+      ${TABS.map(t=>`<button class="tab ${STATE.activeTab===t?'active':''}" onclick="setState({activeTab:'${t}'})">${t}</button>`).join('')}
+    </div>
+    ${tabContent}
+    <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:11px;color:#94a3b8;">EDGE Course Development Roadmap · ${d.total} courses</span>
+      <span style="font-size:11px;color:#94a3b8;">Uploaded ${STATE.uploadedAt}</span>
+    </div>
+  </div>`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML=STATE.screen==='upload'?renderUpload():renderDashboard(STATE.data);
+  if(STATE.screen==='upload')bindUpload();
+}
+
+function bindUpload(){
+  const zone=document.getElementById('dropZone');
+  const inp=document.getElementById('fileInput');
+  if(!zone)return;
+  zone.addEventListener('dragover',e=>{e.preventDefault();if(!STATE.drag)setState({drag:true});});
+  zone.addEventListener('dragleave',()=>{if(STATE.drag)setState({drag:false});});
+  zone.addEventListener('drop',e=>{e.preventDefault();setState({drag:false});const f=e.dataTransfer.files[0];if(f)parseFile(f);});
+  zone.addEventListener('click',()=>inp.click());
+  inp.addEventListener('change',e=>{if(e.target.files[0])parseFile(e.target.files[0]);});
+}
+
+function parseFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+      const data=processRows(rows);
+      const now=new Date().toLocaleString("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+      setState({screen:"dashboard",data,fileName:file.name,uploadedAt:now,error:null,activeTab:"Current FY (FY26)"});
+    }catch(err){setState({error:"Could not parse file. Please export as .xlsx or .csv from Smartsheet."});}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Make setState global so inline onclick handlers work
+window.setState=setState;
+render();
+</script>
+</body>
+</html>
